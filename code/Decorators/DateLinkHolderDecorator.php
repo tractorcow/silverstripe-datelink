@@ -1,9 +1,8 @@
 <?php
 
 /**
- * Decorates the holder page of any dated-linked page
- *
- * @author Damo
+ * Allows the date link cache to update during dev/build
+ * @author Damian Mooyman
  */
 class DateLinkHolderDecorator extends SiteTreeDecorator
 {

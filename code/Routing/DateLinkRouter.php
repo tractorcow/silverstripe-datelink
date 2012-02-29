@@ -1,35 +1,66 @@
 <?php
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
- * Description of DateLinkRouter
- *
- * @author Damo
+ * Handles all routing pattern setup within the Silverstripe routing tables
+ * @author Damian Mooyman
  */
 class DateLinkRouter implements IDateLinkRouter
 {
+    /**
+     * Name of database field to use when extracting dates from child pages.
+     * Currently this is restricted to a single value, but you could easily create a wrapper for this in your code
+     * with a getURLDate function and set it to this.
+     * @var string
+     */
     protected $dateField;
+    
+    /**
+     * Pattern to use when building as well as routing links. Using one variable for both purposes keeps things consistent
+     * @see DateLink::$default_url_pattern
+     * @var string
+     */
+    protected $urlPattern;
+    
+    /**
+     * List of class names that have been registered as parent pages of date-mapped urls
+     * @var array
+     */
     protected $classNames = array();
+    
+    /**
+     * Class name to use for implementation of the controller class that will handle all routed requests
+     * Should be a subclass of Controller
+     * @see Controller
+     * @var string
+     */
     protected $controllerClass = 'DateLinkController';
 
     /**
-     * File used to store routing table
+     * Filename used to store routing table
      * This is required as database access is not accessible during routing, so these tables must be
-     * built during dev/build and read during page init
-     * @var string routing
+     * built during dev/build and read during page init.
+     * This file will be created under assets folder as it's a writable file, and I don't by policy put
+     * writable files outside of this location.
+     * @var string
      */
     protected $routeCache = '_datelink/Routing.xml';
 
-    public function __construct($dateField)
+    /**
+     * Construct this instance of the routing handler
+     * @param string $dateField Name of database field to use when extracting dates from child pages.
+     * @param string $urlPattern
+     */
+    public function __construct($dateField, $urlPattern)
     {
         $this->dateField = $dateField;
+        $this->urlPattern = $urlPattern;
         $this->init();
     }
 
+    /**
+     * Sets up this module. By default, if this module is never referenced in user code nothing is ever constructed.
+     * This is used as a trigger to flag when this module is enabled, rather than by explicitly calling setup somewhere.
+     */
     protected function init()
     {
         // Automatically decorates pages with required helper functions
@@ -41,19 +72,51 @@ class DateLinkRouter implements IDateLinkRouter
         $this->registerRoutes();
     }
 
+    /**
+     * Sets the field to extract the date from
+     * @param string $field Name of the date field
+     */
     public function setDateField($field)
     {
         $this->dateField = $field;
     }
 
+    /**
+     * Gets the field to extract the date from
+     * @return string Name of the date field
+     */
     public function getDateField()
     {
         return $this->dateField;
     }
 
-    public function RegisterClass($className)
+    /**
+     * Sets the pattern to use when routing and generating links
+     * @param string $pattern The pattern to use
+     */
+    public function setURLPattern($pattern)
     {
-        $this->classNames[] = $className;
+        $this->urlPattern = $pattern;
+    }
+
+    /**
+     * Gets the pattern to use when routing and generating links
+     * @return string The pattern used
+     */
+    public function getURLPattern()
+    {
+        return $this->urlPattern;
+    }
+
+    /**
+     * Registers a class beneath which all child pages will be date-mapped.
+     * @param type $className Name of the class to register
+     * @param callback|boolean $filter a boolean, callback, or other closure that can be passed instances of the
+     * specified class to determine if it should be consitered when filtering
+     */
+    public function RegisterClass($className, $filter = true)
+    {
+        $this->classNames[$className] = $filter;
         DataObject::add_extension($className, 'DateLinkHolderDecorator');
     }
 
@@ -84,16 +147,29 @@ class DateLinkRouter implements IDateLinkRouter
         }
     }
 
-    protected function registerRoute($link, $parentID, $yearNumber)
+    /**
+     * Registers a single routing rule within silverstripe
+     * @param string $parentLink The link of the parent page
+     * @param integer $parentID The ID of the parent page
+     * @param integer $yearNumber The value of the $Year parameter
+     */
+    protected function registerRoute($parentLink, $parentID, $yearNumber)
     {
-        $trimmedLink = trim($link, '/');
-        if(!empty($trimmedLink))
-            $trimmedLink .= '/'; // considers situation where we could be using the home page
-        $pattern = '$Month!/$URLSegment!//$Action/$ID/$OtherID';
-        $fullPattern = "$trimmedLink$yearNumber/$pattern";
+        $parentLink = trim($parentLink, '/');
+        $pattern = $this->urlPattern;
         
-        // Registers a route with
-        Director::addRules(20,array($fullPattern => array(
+        // Replace wildcards in pattern
+        // Substitute leading-zero indicators
+        $pattern = preg_replace('/#\$/', '$', $pattern);
+        // substitute the year
+        $pattern = preg_replace('/\$Year!?/i', $yearNumber, $pattern);
+        // substitute parent url
+        $pattern = preg_replace('/\$ParentLink!?/', $parentLink, $pattern);
+        // Fix any extra slashes, which may occur if the $parentLink is /
+        $pattern = trim($pattern, '/');
+        
+        // Registers a route with silverstripe
+        Director::addRules(20,array($pattern => array(
             'Controller' => $this->controllerClass,
             'ParentID' => $parentID, // Used as a shortcut for simplifying nested routing
             'Year' => $yearNumber
@@ -123,18 +199,30 @@ class DateLinkRouter implements IDateLinkRouter
         return array_unique($years);
     }
 
+    /**
+     * Instructs the module to refresh the routing XML cache file
+     * This may not be called during manifest initialisation (_config.php) as database access is not available
+     */
     public function RefreshCache()
     {
-// Builds XML cache file using all available routes
+        // Builds XML cache file using all available routes
         $document = new DOMDocument();
         $document->formatOutput = true;
         $routes = $document->createElement('routes');
         $document->appendChild($routes);
 
-// append all routes
-        foreach ($this->classNames as $className)
+        // append all routes
+        foreach ($this->classNames as $className => $filter)
             foreach (DataObject::get($className) as $holderPage)
             {
+                // Apply any specified filter
+                if(is_callable($filter) && !call_user_func($filter, $holderPage))
+                    continue;
+                
+                // Fallback to using boolean filter
+                if(!$filter)
+                    continue;
+            
                 $route = $document->createElement('route');
                 $link = $document->createElement('link', $holderPage->Link());
                 $route->appendChild($link);
@@ -157,7 +245,7 @@ class DateLinkRouter implements IDateLinkRouter
                 $routes->appendChild($route);
             }
 
-// Ensure output directory exists
+        // Ensure output directory exists
         $outputPath = $this->getCacheFilePath();
 
         Filesystem::makeFolder(dirname($outputPath));

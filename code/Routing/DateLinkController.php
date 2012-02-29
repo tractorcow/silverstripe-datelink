@@ -2,8 +2,7 @@
 
 /**
  * Handles urls that match dated link routes
- *
- * @author Damo
+ * @author Damian Mooyman
  * @see ModelAsController
  */
 class DateLinkController extends ModelAsController
