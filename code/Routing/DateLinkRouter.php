@@ -6,6 +6,7 @@
  */
 class DateLinkRouter implements IDateLinkRouter
 {
+
     /**
      * Name of database field to use when extracting dates from child pages.
      * Currently this is restricted to a single value, but you could easily create a wrapper for this in your code
@@ -13,20 +14,20 @@ class DateLinkRouter implements IDateLinkRouter
      * @var string
      */
     protected $dateField;
-    
+
     /**
      * Pattern to use when building as well as routing links. Using one variable for both purposes keeps things consistent
      * @see DateLink::$default_url_pattern
      * @var string
      */
     protected $urlPattern;
-    
+
     /**
      * List of class names that have been registered as parent pages of date-mapped urls
      * @var array
      */
     protected $classNames = array();
-    
+
     /**
      * Class name to use for implementation of the controller class that will handle all routed requests
      * Should be a subclass of Controller
@@ -157,7 +158,7 @@ class DateLinkRouter implements IDateLinkRouter
     {
         $parentLink = trim($parentLink, '/');
         $pattern = $this->urlPattern;
-        
+
         // Replace wildcards in pattern
         // Substitute leading-zero indicators
         $pattern = preg_replace('/#\$/', '$', $pattern);
@@ -167,13 +168,14 @@ class DateLinkRouter implements IDateLinkRouter
         $pattern = preg_replace('/\$ParentLink!?/', $parentLink, $pattern);
         // Fix any extra slashes, which may occur if the $parentLink is /
         $pattern = trim($pattern, '/');
-        
+
         // Registers a route with silverstripe
-        Director::addRules(20,array($pattern => array(
-            'Controller' => $this->controllerClass,
-            'ParentID' => $parentID, // Used as a shortcut for simplifying nested routing
-            'Year' => $yearNumber
-        )));
+        Director::addRules(20,
+                array($pattern => array(
+                'Controller' => $this->controllerClass,
+                'ParentID' => $parentID, // Used as a shortcut for simplifying nested routing
+                'Year' => $yearNumber
+                )));
     }
 
     protected function decoratePage()
@@ -216,13 +218,14 @@ class DateLinkRouter implements IDateLinkRouter
             foreach (DataObject::get($className) as $holderPage)
             {
                 // Apply any specified filter
-                if(is_callable($filter) && !call_user_func($filter, $holderPage))
+                if (is_callable($filter))
+                {
+                    if (!call_user_func($filter, $holderPage))
+                        continue;
+                }
+                elseif (!$filter) // Fallback to using boolean filter
                     continue;
-                
-                // Fallback to using boolean filter
-                if(!$filter)
-                    continue;
-            
+
                 $route = $document->createElement('route');
                 $link = $document->createElement('link', $holderPage->Link());
                 $route->appendChild($link);
