@@ -53,7 +53,7 @@ then simply read from the XML file and set in the routing table each page load.
 
 ### Code changes to Page.php
 
- * To tell pages to use the new date url scheme you will need to override the RelativeLink() function in your class
+ * To tell pages to use the new date url scheme you will need to override the RelativeLink() function in your Page class
 
 ```php
 public function RelativeLink($action = null)
@@ -73,3 +73,10 @@ public function RelativeLink($action = null)
     return parent::RelativeLink($action);
 }
 ```
+
+### Customising the URL structure
+
+You can customise the URL layout using constants, year, month (name/number), day of the month, and even day of the
+week using DateLink::set_url_pattern('pattern');
+
+Please check the in-code documentation at /code/DateLink.php#L17 for the actual pattern syntax.
