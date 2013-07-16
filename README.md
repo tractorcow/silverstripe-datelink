@@ -41,7 +41,7 @@ routes are initialised. All required parent pages and years are extracted during
 that silverstripe can use during routing, to prevent clashes between it and the default page routing. These routes are
 then simply read from the XML file and set in the routing table each page load.
 
-### Configuration
+## Configuration
 
 See [DateLink.yml](_config/DateLink.yml) for the basic configuration options.
 
