@@ -2,29 +2,30 @@
 
 /**
  * Handles urls that match dated link routes
+ * 
+ * @package datelink
  * @author Damian Mooyman
  * @see ModelAsController
  */
-class DateLinkController extends ModelAsController
-{
-    /**
-     * Finds the controller for this page under the given parent id
-     */
-    public function getNestedController()
-    {
-        // For some reason using the non-deprecated methods did not work.
-        // @todo Once SS3.0 find working non-deprecated functionality to insert here
-        $parentID = Director::urlParam('ParentID');
-        $URLSegment = Director::urlParam('URLSegment');
+class DateLinkController extends ModelAsController {
 
-        // get child page
-        $sitetree = DataObject::get_one('Page',
-                        sprintf(
-                                "`SiteTree`.`URLSegment` = '%s' AND `SiteTree`.`ParentID` = %d",
-                                Convert::raw2sql($URLSegment), $parentID
-                        ));
+	/**
+	 * Finds the controller for this page under the given parent id
+	 */
+	public function getNestedController() {
+		
+		// Extract values stored in route
+		$parentID = $this->request->param('ParentID');
+		$URLSegment = $this->request->param('URLSegment');
 
-        return self::controller_for($sitetree, $this->request->param('Action'));
-    }
+		// get child page
+		$sitetree = SiteTree::get()
+			->filter(array(
+				"URLSegment" => $URLSegment,
+				"ParentID" => $parentID
+			))->first();
+
+		return self::controller_for($sitetree, $this->request->param('Action'));
+	}
 
 }

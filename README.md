@@ -13,73 +13,90 @@ You could turn these links into:
 
 http://www.mysite.com/blog/2012/2/heres-an-awesome-post
 
+Dated style urls can only be applied to subpages, grouped under common holder pages of a list of specified types.
+
 ## Credits and Authors
 
  * Damian Mooyman - <https://github.com/tractorcow/silverstripe-datelink>
 
 ## Requirements
 
- * SilverStripe 2.4.7, may work on lower versions
- * PHP 5.2
+ * SilverStripe 3.1
 
 ## Installation Instructions
 
- * Extract all files into the 'datelink' folder under your Silverstripe root.
- * Ensure that the assets folder is properly writable. This module will save an xml file under assets/_datelink and will need write permissions
+ * Extract all files into the 'datelink' folder under your Silverstripe root, or install using composer
 
-### Settings in _config.php
-
- * Unless you wish items to be dated against the 'Created' database field you will need to explicitly define which property to use.
-   For instance, to instruct the module to use the 'Date' field you would use the following:
-
-```php
-DateLink::set_date_field('Date');
+```bash
+composer require "tractorcow/silverstripe-datelink": "3.1.*@dev"
 ```
 
- * To apply date url styles to any class you will need to register the class type of its parent. For instance, if you wish 
-   to apply these links to the BlogPost class you will need to register the BlogHolder class.
-
-```php
-DateLink::register_class('BlogHolder');
-```
-
- * Once you have setup your _config.php settings you should do a /dev/build. This will regenerate the Routing.xml cache file
-   that is required for ongoing routing requests.
+ * Ensure that the assets folder is properly writable. This module will save an xml file under assets/_datelink and will
+   need write permissions
+ * Configure the page options. See the [Configuration](#configuration) section.
+ * Run dev/build in order to generate and cache routes.
 
 The reason for using a cached XML file for storing routing patterns is that database access is not available before
 routes are initialised. All required parent pages and years are extracted during dev/build to create distinct patterns
 that silverstripe can use during routing, to prevent clashes between it and the default page routing. These routes are
 then simply read from the XML file and set in the routing table each page load.
 
-### Code changes to Page.php
+### Configuration
 
- * To tell pages to use the new date url scheme you will need to override the RelativeLink() function in your Page class
+See [DateLink.yml](_config/DateLink.yml) for the basic configuration options.
 
-```php
-public function RelativeLink($action = null)
-{
-    return $this->DatedRelativeLink($action);
-}
+### Class Filter Configuration
+
+To setup date customised links you should configure the class names of each child and parent relations. The only
+mandatory property to set is the `DateLink.holder_classes` config property to specify the parent classes of all dated
+urls.
+
+```yaml
+DateLink:
+  holder_classes:
+    - 'BlogHolder'
 ```
 
- * If you are using a blog module and don't wish to edit the core blog files you can still do this via the Page class
+By default all children of the specified classes will have dated urls applied to them. In order to further filter out
+these classes an additional filter may be applied, the `DateLink.child_classes` config property.
 
-```php
-public function RelativeLink($action = null)
-{
-    if ($this->ClassName == 'BlogEntry')
-        return $this->DatedRelativeLink($action);
+For example, to filter only 'BlogEntry' pages:
 
-    return parent::RelativeLink($action);
-}
+```yaml
+DateLink:
+  child_classes:
+    - 'BlogEntry'
 ```
 
-### Customising the URL structure
+### URL Configuration
 
 You can customise the URL layout using constants, year, month (name/number), day of the month, and even day of the
-week using DateLink::set_url_pattern('pattern');
+week using the configuration property `DateLink.url_pattern`
 
-Please check the in-code documentation at /code/DateLink.php#L17 for the actual pattern syntax.
+```yaml
+DateLink:
+  url_pattern: '$ParentLink!/$Year!/$Month!/$URLSegment!//$Action/$ID/$OtherID'
+```
+
+The following pattern placeholders can be used here:
+ * $ParentLink! - The parent page URL (mandatory)
+ * $URLSegment! - The URLSegment of the current page (mandatory)
+ * $Year! - Year (mandatory)
+ * $Month! - Month number
+ * #$Month! - Month number (leading zeros)
+ * $MonthName! - Month name (full name)
+ * $Date! - Day of month
+ * #$Date! - Day of month (leading zeros)
+ * $Weekday! - Day of the week (full name)
+
+All wildcards prior to the '//' must be qualified with a trailing '!'
+
+### Date Configuration
+
+The field which holds the date for each page can be customised by one of two ways:
+
+ * The `DateLink.default_date_field` config option will set the default field. By default this is 'Created'
+ * Override the `getRouteDate` function in your Page class to return the date value that should be used for that page.
 
 ## License
 

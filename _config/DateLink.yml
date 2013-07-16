@@ -1,0 +1,36 @@
+---
+Name: datelinkrequirements
+---
+SiteTree:
+  extensions:
+    - DateLinkExtension
+---
+Name: datelinkconfig
+---
+DateLink:
+# Specifies the list of child classes.
+# If blank, all pages of holder_classes will be routed.
+  child_classes: []
+# Specify the list of holder classes.
+# E.g. Add "BlogHolder" to specify dated blog entries for all children of instances of BlogHolder.
+  holder_classes: []
+# Default field to use for generating the date
+# Individual models can override this by implementing a getRouteDate function
+  default_date_field: Created
+# Default value for the url pattern to use in routing
+# Care must be taken when constructing this, as it must follow some exact rules:
+# - $Year MUST appear somewhere as too many wildcards will cause it to match too many false positives in routing
+# - This pattern is used both in routing and in building URLS for date linked pages. When building links everything
+#   after the // will be cut off and have any $action appended on the end
+# - The $ParentLink field will be replaced with the actual parent url both in routing and in building links
+# - You can use $Year, $Month, $MonthName, $Date, $Weekday, $ParentLink, $URLSegment and constants
+# - You can use #$Month and #$Date for zero-padded versions
+# - All patterns before the // should end with ! to tell Silverstripe that this is a required pattern
+  url_pattern: '$ParentLink!/$Year!/$Month!/$URLSegment!//$Action/$ID/$OtherID'
+# Class name to use for implementation of the controller class that will handle all routed requests.
+# Should be a subclass of Controller
+  controller: 'DateLinkController'
+# Filename used to store routing table
+# This is required as database access is not accessible during routing, so these tables must be
+# built during dev/build and read during page init. This will be placed under /assets
+  route_cache: '_datelink/Routing.xml'

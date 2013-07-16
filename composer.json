@@ -14,7 +14,7 @@
 		"issues": "http://github.com/tractorcow/silverstripe-datelink/issues"
 	},
 	"require": {	
-		"silverstripe/framework": "2.4.*-dev",
+		"silverstripe/framework": ">=3.1",
 		"composer/installers": "*"
 	},
 	"extra": {
