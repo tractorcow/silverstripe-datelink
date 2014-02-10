@@ -96,7 +96,7 @@ class DateLinkRouter extends Object implements IDateLinkRouter {
 		foreach ($holderClasses as $className) {
 			foreach (DataObject::get($className) as $holderPage) {
 				$route = $document->createElement('route');
-				$link = $document->createElement('link', $holderPage->Link());
+				$link = $document->createElement('link', $holderPage->RelativeLink());
 				$route->appendChild($link);
 				$id = $document->createElement('page_id', $holderPage->ID);
 				$route->appendChild($id);
