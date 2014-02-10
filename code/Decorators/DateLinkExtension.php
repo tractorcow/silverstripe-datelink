@@ -8,6 +8,10 @@
  */
 class DateLinkExtension extends SiteTreeExtension {
 	
+	public function MetaTags(&$tags) {
+		$tags .= $this->owner->renderWith('DateLinkExtension_MetaTags');
+	}
+	
 	/**
 	 * Determine if this page should have date links enabled
 	 * 
