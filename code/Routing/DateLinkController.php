@@ -25,7 +25,7 @@ class DateLinkController extends ModelAsController {
 				"ParentID" => $parentID
 			))->first();
 		
-		if( true !== $sitetree instanceof SiteTree ){
+		if( ! $sitetree instanceof SiteTree ){
 		    return ErrorPage::response_for(404);
         	}
 
